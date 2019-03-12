@@ -93,7 +93,7 @@
         * 通过WMTS协议集成
         * 通过WFS协议集成
 * 组件集成
-    * 集成echart
+    * [集成echarts](ch-component/index.md)
     * 集成D3
     * 集成threejs
 
