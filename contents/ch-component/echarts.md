@@ -45,7 +45,7 @@ const map = new Map({
 
 然后我们需要初始化一个 `ECharts` 图层，主体代码如下
 
-```ecmascript 6
+```jsx
 import EChartsLayer from 'ol-echarts';
 
 const option = {}; // 为标准的ECharts的配置，不需要做特殊处理
@@ -86,7 +86,7 @@ chart.appendTo(map); // 将 ECharts 图层添加到地图上
 
 此外还需要注意，容器创建位置也支持自定义，但是默认都是在上图地图容器内；一般情况下不需要自定义位置，采用默认即可。
 
-```ecmascript 6
+```jsx
 _createLayerContainer (map, options) {
   const viewPort = map.getViewport()
   const container = (this.$container = document.createElement('div'));
@@ -114,7 +114,7 @@ _createLayerContainer (map, options) {
 我们可以看到 `ECharts` 实际上也提供可扩展的接口，所以我们可以依照其核心思想注册一个 `Openlayers` 的坐标系统，主要源码请查看[RegisterCoordinateSystem](https://github.com/sakitam-fdd/ol3Echarts/blob/e74bb74317/packages/ol-echarts/src/coordinate/RegisterCoordinateSystem.js)。
 我们在这章只去分析一些关键的点即可。
 
-```ecmascript 6
+```jsx
 // 注册openlayers坐标系统，_getCoordinateSystem来自 `RegisterCoordinateSystem`
 echarts.registerCoordinateSystem('openlayers', _getCoordinateSystem(map, {}));
 
@@ -129,7 +129,7 @@ for (let i = series.length - 1; i >= 0; i--) {
 
 3、需要拿到已经创建的容器去实例化 `ECharts` 主要代码如下：
 
-```ecmascript 6
+```jsx
 // 创建echarts实例，并且设置配置项
 this.$chart = echarts.init(this.$container);
 this.$chart.setOption(options)
@@ -137,7 +137,7 @@ this.$chart.setOption(options)
 
 4、绑定openlayers地图的重绘事件，在`ol.view`视图变化时同步更新 `echarts` 图表内容。
 
-```ecmascript 6
+```jsx
 const Map = this.$Map;
 const view = Map.getView();
 if (this.$options.forcedPrecomposeRerender) {
@@ -161,7 +161,7 @@ this.moveendListener_ = Map.on('moveend', this.onMoveEnd.bind(this));
 
 5、地图事件触发echarts重绘
 
-```ecmascript 6
+```jsx
 // 如果强制重绘会手动调用一次 `echarts` 实例的 `clear` 方法
 if (this.$options.forcedRerender) {
   this.$chart.clear();
