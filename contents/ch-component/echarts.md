@@ -2,9 +2,9 @@
 
 本章节主要讲解 `ol5` 与 `ECharts` 如何进行集成，将会从以下几个方面进行深入：
 
-- [ol-echarts简介](##ol-echarts简介)
-- [插件使用](##插件使用)
-- [原理剖析](##原理剖析)
+- [ol-echarts简介](#ol-echarts简介)
+- [插件使用](#简单使用)
+- [原理剖析](#原理剖析)
 
 当然在阅读本章节之前，需要你已经了解 `ol5` 的图层、事件系统、投影和坐标变换。
 
@@ -19,7 +19,7 @@
   首先在使用前你应该已经安装了 `ol echarts ol-echarts` 这几个必要依赖，并且如果使用了 `gl` 渲染模式还需要新增 `echarts-gl` 依赖。
 然后和正常流程一样，我们需要先创建一个地图：
 
-```ecmascript 6
+```jsx
 import 'ol/ol.css';
 import { Map, View } from 'ol';
 import TileLayer from 'ol/layer/Tile';
@@ -62,6 +62,8 @@ chart.appendTo(map); // 将 ECharts 图层添加到地图上
 ```
 
 通过以上步骤，我们就能简单实现了一下 `Openlayers 5` 和 `ECharts` 结合展示散点图的示例。
+
+![ol-echarts-dom](../images/scatter.jpg)
 
 ## 原理剖析
 
