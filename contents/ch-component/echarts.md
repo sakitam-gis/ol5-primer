@@ -11,7 +11,7 @@
 ## [ol-echarts](https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts)简介
 
   `ol-echarts` 是已经封装完成的 `ol5` 与 `ECharts`集成的类库，暂时已经支持了 `echarts` 的所有map组件类型，对普通不支持坐标系的图表也兼容了饼图，柱状图，折线图。
-通过这个插件，你可以直接将`Echarts`集成到 `Openlayers 5`。但是除了使用外，我们还希望读者能从中获得更多的东西，触类旁通，真正的剖析原理去了解 ol5 内部的一些组成，可能会
+通过这个插件，你可以直接将`Echarts`集成到 `Openlayers 5`。但是除了使用外，我们还希望读者能从中获得更多的东西，触类旁通，真正地剖析原理去了解 ol5 内部的一些组成，可能会
 带给你一些不一样的知识。
 
 ## 简单使用
@@ -61,7 +61,7 @@ const chart = new EChartsLayer(option, {
 chart.appendTo(map); // 将 ECharts 图层添加到地图上
 ```
 
-通过以上步骤，我们就能简单实现了一下 `Openlayers 5` 和 `ECharts` 结合展示散点图的示例。
+通过以上步骤，我们就能简单实现了一下 `Openlayers 5` 和 `ECharts` 结合展示散点图的示例，[完整代码](https://github.com/sakitam-fdd/ol3Echarts/blob/master/website/pages/scatter.js)。
 
 ![ol-echarts-dom](../images/scatter.jpg)
 
@@ -87,6 +87,7 @@ chart.appendTo(map); // 将 ECharts 图层添加到地图上
 ![ol-echarts-dom](../images/ol-echarts-dom.png)
 
 此外还需要注意，容器创建位置也支持自定义，但是默认都是在上图地图容器内；一般情况下不需要自定义位置，采用默认即可。
+[查看源码](https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts/src/index.js#L215), 以下为核心代码：
 
 ```jsx
 _createLayerContainer (map, options) {
@@ -113,8 +114,9 @@ _createLayerContainer (map, options) {
 
 2、当然我们在实例化 `ECharts` 之前，我们需要考虑如何将 `Openlayers` 的坐标系统注册到 `ECharts` 的坐标系统上。其实参考
 `BMap` 的官方集成方案 [BMapCoordSys](https://github.com/apache/incubator-echarts/blob/master/extension/bmap/BMapCoordSys.js) 
-我们可以看到 `ECharts` 实际上也提供可扩展的接口，所以我们可以依照其核心思想注册一个 `Openlayers` 的坐标系统，主要源码请查看[RegisterCoordinateSystem](https://github.com/sakitam-fdd/ol3Echarts/blob/e74bb74317/packages/ol-echarts/src/coordinate/RegisterCoordinateSystem.js)。
+我们可以看到 `ECharts` 实际上也提供可扩展的接口，所以我们可以依照其核心思想注册一个 `Openlayers` 的坐标系统，主要源码请查看[RegisterCoordinateSystem](https://github.com/sakitam-fdd/ol3Echarts/blob/e74bb74317/packages/ol-echarts/src/coordinate/RegisterCoordinateSystem.js)，
 我们在这章只去分析一些关键的点即可。
+[查看源码](https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts/src/index.js#L400), 以下为核心代码：
 
 ```jsx
 // 注册openlayers坐标系统，_getCoordinateSystem来自 `RegisterCoordinateSystem`
@@ -129,7 +131,7 @@ for (let i = series.length - 1; i >= 0; i--) {
 ```
   
 
-3、需要拿到已经创建的容器去实例化 `ECharts` 主要代码如下：
+3、需要拿到已经创建的容器去实例化 `ECharts` [查看源码](https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts/src/index.js#L450), 以下为核心代码：
 
 ```jsx
 // 创建echarts实例，并且设置配置项
@@ -138,6 +140,7 @@ this.$chart.setOption(options)
 ```
 
 4、绑定openlayers地图的重绘事件，在`ol.view`视图变化时同步更新 `echarts` 图表内容。
+[查看源码](https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts/src/index.js#L348), 以下为核心代码：
 
 ```jsx
 const Map = this.$Map;
@@ -181,3 +184,103 @@ this.$chart.setOption(options)
   - 地理坐标到真实屏幕坐标的实时转换。
   
 以上就是本章节的基本内容。
+
+### CoordinateSystem - 坐标系统详解
+
+  我们在查看 `ECharts` 官方的[百度地图扩展](https://github.com/apache/incubator-echarts/blob/master/extension/bmap)或者其他诸如 [maptalks.e3](https://github.com/maptalks/maptalks.e3) 扩展, 他们都包含了一段核心代码是关于坐标系统注册的；同样的，我们在扩展 `ol-echarts` 时我们同样也需要考虑
+特殊坐标系统注册的问题。下面我们会详细说明我们为什么要进行坐标系统的注册，以及是如何通过坐标系统将空间坐标映射到真实屏幕坐标的。
+
+  首先我们需要思考一下，在真实地图可视化的开发过程中我们一般拿到的数据都为空间数据，我们并不能直接用空间数据的原始值进行打点到浏览器窗口上; 一般我们都会通过各个地图引擎提供的方法将地理坐标转换为
+真实屏幕坐标进行绘制（而且需要注意的是地理坐标的输入是不可变的，但是对应的屏幕坐标会随着视图的变化而变化），对于 `Openlayers` 我们会有个常用的方法为：
+
+```jsx
+// coordinates 为地理坐标，返回屏幕坐标
+map.getPixelFromCoordinate(coordinates)
+```
+
+对应的代码实现如下：
+
+* [普通图表类型(可以针对)](https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts/src/coordinate/RegisterCoordinateSystem.js#L54)：
+
+```jsx
+RegisterCoordinateSystem.prototype.dataToPoint = function (coords) {
+  if (coords && Array.isArray(coords) && coords.length > 0) {
+    // 仅做判断和将字符串坐标转换为数字
+    coords = coords.map(function (item) {
+      if (typeof item === 'string') {
+        item = Number(item);
+      }
+      return item;
+    });
+  }
+  let source = options['source'] || 'EPSG:4326';
+  let destination = options['destination'] || this.projCode_; // 当前地图的视图投影
+  // 关键代码：
+  // 1、transform(coords, source, destination) 支持多数据投影，最终将其转换为 `EPSG:4326`
+  // 2、map.getPixelFromCoordinate(coordinates) 将坐标转换为屏幕像素
+  let pixel = map.getPixelFromCoordinate(transform(coords, source, destination));
+  const mapOffset = this._mapOffset;
+  return [pixel[0] - mapOffset[0], pixel[1] - mapOffset[1]];
+};
+```
+
+* 特殊图表类型（custom类型, 因为此种类型会涉及图形的大小-size）：
+
+```jsx
+// form: https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts/src/coordinate/RegisterCoordinateSystem.js#L121
+RegisterCoordinateSystem.prototype.prepareCustoms = function (data) {
+  const rect = this.getViewRect();
+  return {
+    coordSys: {
+      // The name exposed to user is always 'cartesian2d' but not 'grid'.
+      type: 'openlayers',
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height
+    },
+    api: {
+      coord: bind(this.dataToPoint, this),  // 转换屏幕坐标方法
+      size: bind(RegisterCoordinateSystem.dataToCoordSize, this) // 转换图形大小的方法
+    }
+  };
+};
+
+// from: https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts/src/coordinate/RegisterCoordinateSystem.js#L144
+RegisterCoordinateSystem.dataToCoordSize = function (dataSize, dataItem) {
+  dataItem = dataItem || [0, 0];
+  return $map(
+    [0, 1],
+    function (dimIdx) {
+      let val = dataItem[dimIdx]; // 当前数据的经纬度
+      let halfSize = dataSize[dimIdx] / 2; // 对应数据大小的一半
+      let [p1, p2] = [[], []];
+      p1[dimIdx] = val - halfSize; // 对应数据大小的负向偏移
+      p2[dimIdx] = val + halfSize; // 对应数据大小的正向偏移
+      p1[1 - dimIdx] = p2[1 - dimIdx] = dataItem[1 - dimIdx]; // 仅做临时计算的辅助变量
+      return Math.abs(this.dataToPoint(p1)[dimIdx] - this.dataToPoint(p2)[dimIdx]); // 转换为对应屏幕像素的实际大小
+    },
+    this
+  );
+};
+```
+
+[坐标系统的注册](https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts/src/coordinate/RegisterCoordinateSystem.js#L165)：
+
+```jsx
+
+// 默认调用 echarts 的 `registerCoordinateSystem` 方法进行自定义坐标系统的注册，
+// 第一个参数为 坐标系统的 type 类型，第二个参数为自定义坐标系统的构造函数, 默认会调用构造函数的静态方法 `create`
+echarts.registerCoordinateSystem('openlayers', RegisterCoordinateSystem);
+
+// create函数主要做了以下工作：
+// 循环 series，将指定 `coordinateSystem` 类型为 `openlayers` 的 seriesModel的 `coordinateSystem` 指向 `RegisterCoordinateSystem` 的实例。
+RegisterCoordinateSystem.create = function (echartModel, api) {
+  echartModel.eachSeries(function (seriesModel) {
+    if (seriesModel.get('coordinateSystem') === 'openlayers') {
+      seriesModel.coordinateSystem = new RegisterCoordinateSystem(map);
+    }
+  });
+};
+
+```
