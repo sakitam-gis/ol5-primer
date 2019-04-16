@@ -15,7 +15,7 @@
     * 认识地图组件
     * 解析地图代码
     * 同框架集成
-        * 同VUE集成
+        * 同VUE集成 ([@alex2wong](https://github.com/alex2wong) 3.4-3.31)
         * 同React集成 ([@Liquid-Zhangliquan](https://github.com/Liquid-Zhangliquan) 3.3-3.31)
         * 同Angular集成
 * 基本应用开发
@@ -95,7 +95,7 @@
 * [组件集成](ch-component/index.md)
     * [集成echarts](ch-component/echarts.md)
     * 集成D3
-    * 集成threejs
+    * 集成threejs ([@萌萌哒的熊哥](https://github.com/kelina01) 3.4-6.4)
 
 ### 案例
 * 轨迹回放
