@@ -10,7 +10,7 @@
 
 ## [ol-echarts](https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts)简介
 
-  `ol-echarts` 是已经封装完成的 `ol5` 与 `ECharts`集成的类库，暂时已经支持了 `echarts` 的所有map组件类型，对普通不支持坐标系的图表也兼容了饼图，柱状图，折线图。
+  `ol-echarts` 是已经封装完成的 `ol5` 与 `ECharts`集成的类库，暂时已经支持了 `echarts` 的所有map组件类型，对不支持地理坐标系统的普通图表，也做了部分兼容，例如饼图、柱状图、折线图。
 通过这个插件，你可以直接将`Echarts`集成到 `Openlayers 5`。但是除了使用外，我们还希望读者能从中获得更多的东西，触类旁通，真正地剖析原理去了解 ol5 内部的一些组成，可能会
 带给你一些不一样的知识。
 
@@ -60,8 +60,7 @@ const chart = new EChartsLayer(option, {
 
 chart.appendTo(map); // 将 ECharts 图层添加到地图上
 ```
-
-通过以上步骤，我们就能简单实现了一下 `Openlayers 5` 和 `ECharts` 结合展示散点图的示例，[完整代码](https://github.com/sakitam-fdd/ol3Echarts/blob/master/website/pages/scatter.js)。
+通过以上步骤，我们就简单实现了 `Openlayers 5` 和 `ECharts` 结合展示散点图的示例，[完整代码](https://github.com/sakitam-fdd/ol3Echarts/blob/master/website/pages/scatter.js)。
 
 ![ol-echarts-dom](../images/scatter.jpg)
 
@@ -69,15 +68,18 @@ chart.appendTo(map); // 将 ECharts 图层添加到地图上
 
 ### 核心原理
 
-  其实我们在考虑这个问题时首先需要知道不管是 `ol` 还是 `echarts` 内的图形绘制和渲染在浏览器端的交互变化实际上都是在内部进行实时的重绘。
-当我们理解清楚这个原理我们就可以考虑是否可以通过对 `ol` 视图和 `echarts` 的视图进行同步就能达到将 `ol` 和 `echarts` 结合起来进行展示。
-而且幸运的是[echarts](https://github.com/apache/incubator-echarts/blob/master/extension/bmap/README.md) 官方已经给出了和百度地图
+  我们知道不管是 `ol` 还是 `echarts` 或者是其他图形渲染类库，它们的核心原理都是 - 数据发生变动或者交互动作触发后再次进行图形的绘制过程（重绘）。
+当我们理解清楚以上原理，就可以考虑把 `ol` 视图和 `echarts` 视图进行同步，以达到将两者集成展示的目的。而且幸运的是[echarts](https://github.com/apache/incubator-echarts/blob/master/extension/bmap/README.md) 官方已经给出了和百度地图
 结合的相关代码，我们可以通过剖析相关代码来加快我们对核心原理的理解。
 
-  首先针对 `ol` 图层和 `echarts` 图层两者叠加一般我们有两种方式：
-  * 一是直接创建一个页面元素再去实例化一个 `echarts` 容器，然后通过 `ol` 地图视图变化抛出的事件去同步 `ECharts` 图表的变化。这种做法的好处是
+#### 实现方案
+
+针对 `ol` 图层和 `echarts` 图层两者集成一般我们有两种方式：
+1.  一是直接创建一个页面元素再去实例化一个 `echarts` 容器，然后通过 `ol` 地图视图变化抛出的事件去同步 `ECharts` 图表的变化。这种做法的好处是
   可以使用 `ECharts` 本身自带的 `ToolTip` 和控件等，缺点是会造成性能的损失。
-  * 另外一种方案是直接使用 `ImageCanvas` 去创建内置可合并的 canvas 图层，这种方案可以在一定程度上提升渲染性能，但是会损失 `ECharts` 内置的一些交互。
+2. 另外一种方案是直接使用 `ImageCanvas` 去创建内置可合并的 canvas 图层，这种方案可以在一定程度上提升渲染性能，但是会损失 `ECharts` 内置的一些交互。
+
+#### 实现流程
 
 下面我们主要以第一种方案梳理一下具体实现的流程。
 
@@ -112,11 +114,7 @@ _createLayerContainer (map, options) {
 }
 ```
 
-2、当然我们在实例化 `ECharts` 之前，我们需要考虑如何将 `Openlayers` 的坐标系统注册到 `ECharts` 的坐标系统上。其实参考
-`BMap` 的官方集成方案 [BMapCoordSys](https://github.com/apache/incubator-echarts/blob/master/extension/bmap/BMapCoordSys.js) 
-我们可以看到 `ECharts` 实际上也提供可扩展的接口，所以我们可以依照其核心思想注册一个 `Openlayers` 的坐标系统，主要源码请查看[RegisterCoordinateSystem](https://github.com/sakitam-fdd/ol3Echarts/blob/e74bb74317/packages/ol-echarts/src/coordinate/RegisterCoordinateSystem.js)，
-我们在这章只去分析一些关键的点即可。
-[查看源码](https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts/src/index.js#L400), 以下为核心代码：
+2、坐标系统的注册（注册坐标系统的原因和核心原理请查看`坐标系统详解`）：[查看源码](https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts/src/index.js#L400), 以下为核心代码：
 
 ```jsx
 // 注册openlayers坐标系统，_getCoordinateSystem来自 `RegisterCoordinateSystem`
@@ -129,7 +127,6 @@ for (let i = series.length - 1; i >= 0; i--) {
   // series[i]['animation'] = false;
 }
 ```
-  
 
 3、需要拿到已经创建的容器去实例化 `ECharts` [查看源码](https://github.com/sakitam-fdd/ol3Echarts/blob/master/packages/ol-echarts/src/index.js#L450), 以下为核心代码：
 
@@ -187,8 +184,9 @@ this.$chart.setOption(options)
 
 ### CoordinateSystem - 坐标系统详解
 
-  我们在查看 `ECharts` 官方的[百度地图扩展](https://github.com/apache/incubator-echarts/blob/master/extension/bmap)或者其他诸如 [maptalks.e3](https://github.com/maptalks/maptalks.e3) 扩展, 他们都包含了一段核心代码是关于坐标系统注册的；同样的，我们在扩展 `ol-echarts` 时我们同样也需要考虑
-特殊坐标系统注册的问题。下面我们会详细说明我们为什么要进行坐标系统的注册，以及是如何通过坐标系统将空间坐标映射到真实屏幕坐标的。
+  我们在查看 `ECharts` 官方的[百度地图扩展](https://github.com/apache/incubator-echarts/blob/master/extension/bmap)或者其他诸如 
+[maptalks.e3](https://github.com/maptalks/maptalks.e3) 扩展, 他们都包含了一段核心代码是关于坐标系统注册的；同样的，我们在扩展 `ol-echarts` 时
+我们同样也需要考虑特殊坐标系统注册的问题。下面我们会详细说明我们为什么要进行坐标系统的注册，以及是如何通过坐标系统将空间坐标映射到真实屏幕坐标的。
 
   首先我们需要思考一下，在真实地图可视化的开发过程中我们一般拿到的数据都为空间数据，我们并不能直接用空间数据的原始值进行打点到浏览器窗口上; 一般我们都会通过各个地图引擎提供的方法将地理坐标转换为
 真实屏幕坐标进行绘制（而且需要注意的是地理坐标的输入是不可变的，但是对应的屏幕坐标会随着视图的变化而变化），对于 `Openlayers` 我们会有个常用的方法为：
